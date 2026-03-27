@@ -15,7 +15,7 @@ const INITIAL_DATA = {
     roundness: 'some',
     opacity: 0.9,
     scale: 170, // percentage 100 - 240
-    xPosition: 48,
+    xPosition: 49,
     yPosition: 65,
     fontFamily: 'default',
     showCellBg: true,

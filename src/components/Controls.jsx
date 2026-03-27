@@ -146,7 +146,29 @@ function BackgroundTab({ state, updateState }) {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        updateState({ bgType: 'custom', bgValue: reader.result });
+        const img = new Image();
+        img.onload = () => {
+          // Resize large images to avoid app freeze/localStorage limits
+          const MAX_WIDTH = 1200;
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > MAX_WIDTH) {
+            height = (height * MAX_WIDTH) / width;
+            width = MAX_WIDTH;
+          }
+          
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Use medium quality to keep file size small
+          const resizedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+          updateState({ bgType: 'custom', bgValue: resizedBase64 });
+        };
+        img.src = reader.result;
       };
       reader.readAsDataURL(file);
     }
@@ -290,7 +312,7 @@ function StyleTab({ state, updateState }) {
             <div className="flex items-center justify-between">
               <label className="text-sm font-bold opacity-60">위치 조절 (X축)</label>
               <button 
-                onClick={() => updateGridStyle({ xPosition: 48 })}
+                onClick={() => updateGridStyle({ xPosition: 49 })}
                 className="px-2 py-1 bg-white/10 border border-white/5 rounded-lg text-[10px] font-bold text-white/60 hover:text-white hover:bg-white/20 transition-all"
               >
                 초기화
@@ -299,7 +321,7 @@ function StyleTab({ state, updateState }) {
             <div className="flex flex-col gap-1.5 px-0.5">
               <input 
                 type="range" min="30" max="70" 
-                value={gridStyle.xPosition || 48} 
+                value={gridStyle.xPosition || 49} 
                 onChange={(e) => updateGridStyle({ xPosition: parseInt(e.target.value) })}
                 className="w-full accent-accent-neon"
               />
