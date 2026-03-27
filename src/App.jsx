@@ -4,6 +4,7 @@ import PreviewCanvas from './components/PreviewCanvas';
 import Controls from './components/Controls';
 import { Download, Info, X, ChevronDown, ChevronUp } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import { Analytics } from "@vercel/analytics/react";
 
 export default function App() {
   const { state, updateState, updateGridCell, updateTime, resetState } = useTimetableState();
@@ -55,10 +56,10 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-lg mx-auto bg-black text-white overflow-hidden border-x border-canvas-border relative">
+    <div className="flex flex-col h-dvh max-w-lg mx-auto bg-black text-white overflow-hidden border-x border-canvas-border relative">
       {/* Top Header */}
-      <header className="p-4 relative flex items-center justify-center border-b border-canvas-border bg-black/80 backdrop-blur-md z-10">
-        <h1 className="text-lg font-bold tracking-tight text-white/90">✨ 시간표 메이커 ✨</h1>
+      <header className="py-[0.7rem] px-4 relative flex items-center justify-center border-b border-canvas-border bg-black/80 backdrop-blur-md z-10">
+        <h1 className="text-lg font-bold tracking-tight text-white/40">시간표 메이커</h1>
         <button 
           onClick={() => setIsInfoOpen(true)}
           className="absolute right-4 p-1 rounded-full hover:bg-white/10 transition-colors text-white/40 hover:text-white/80"
@@ -211,7 +212,7 @@ export default function App() {
           <PreviewCanvas state={state} updateState={updateState} canvasRef={canvasRef} />
         </div>
         
-        <div className="h-[45%] border-t border-canvas-border bg-black/90 backdrop-blur-xl">
+        <div className="h-[55%] border-t border-canvas-border bg-black/90 backdrop-blur-xl">
           <Controls 
             state={state} 
             updateState={updateState} 
@@ -227,7 +228,7 @@ export default function App() {
         <button
           onClick={handleDownload}
           disabled={isDownloading}
-          className="w-full bg-gradient-to-r from-accent-neon to-indigo-500 text-black font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
+          className="w-full bg-gradient-to-r from-accent-neon to-indigo-500 text-black font-bold py-[0.9rem] px-6 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
         >
           {isDownloading ? (
             <span className="animate-spin w-5 h-5 border-2 border-black border-t-transparent rounded-full" />
@@ -240,6 +241,7 @@ export default function App() {
           ©2026. 난쌤 All rights reserved. @hello.nan_ssaem
         </footer>
       </div>
+      <Analytics />
     </div>
   );
 }

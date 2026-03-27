@@ -50,7 +50,7 @@ export default function Controls({ state, updateState, updateGridCell, updateTim
               key={tab.id}
               onClick={() => updateState({ activeTab: tab.id })}
               className={cn(
-                "flex-1 py-4 flex flex-col items-center gap-1 transition-all relative",
+                "flex-1 py-[0.7rem] flex flex-col items-center gap-1 transition-all relative",
                 isActive ? "text-accent-neon" : "text-white/40 hover:text-white/60"
               )}
             >
@@ -237,7 +237,7 @@ function BackgroundTab({ state, updateState }) {
 function StyleTab({ state, updateState }) {
   const { gridStyle } = state;
   const [openAccordions, setOpenAccordions] = useState({
-    cell: true,
+    cell: false,
     border: false,
     text: false,
     position: true

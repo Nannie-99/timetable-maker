@@ -152,12 +152,34 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
     }
   }, [bgTransform, finalScale, isEditMode, bgType, canvasRef]);
 
+
+  // Calculate a scale specifically for Edit Mode to ensure the entire grid is visible regardless of period count
+  const editScale = useMemo(() => {
+    if (!canvasRef.current || !isEditMode) return autoScale * 0.9;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const padding = 40; // Reduced padding for better space utilization in Edit Mode
+    const containerWidth = rect.width - padding;
+    const containerHeight = rect.height - padding;
+    
+    // Grid dimensions at scale 1
+    const gridWidth = BASE_WIDTH;
+    const cellWidth = (BASE_WIDTH - 40) / 6; // 6 columns, 5 gaps of 8px
+    const cellHeight = cellWidth / 1.7;
+    const gridHeight = (periods + 1) * cellHeight + (periods * 8); // periods+1 rows, periods gaps
+    
+    const sX = containerWidth / gridWidth;
+    const sY = containerHeight / gridHeight;
+    
+    return Math.min(sX, sY);
+  }, [autoScale, periods, isEditMode, canvasRef]);
+
   return (
     <div 
       ref={canvasRef}
       className={cn(
         "relative shadow-2xl transition-all duration-500 bg-[#1a1a1a]",
-        isEditMode ? "h-full w-full flex flex-col items-center justify-center p-8 bg-[#111] overflow-auto" : "h-full w-auto max-w-full rounded-3xl overflow-hidden"
+        isEditMode ? "h-full w-full flex flex-col items-center justify-center p-4 bg-[#111] overflow-auto" : "h-full w-auto max-w-full rounded-3xl overflow-hidden"
       )}
       style={!isEditMode ? containerStyle : {}}
       onMouseDown={handleDragStart}
@@ -192,16 +214,16 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
       <div 
         className={cn(
           "flex flex-col pointer-events-none transition-all duration-500 items-center justify-center",
-          isEditMode ? "w-full h-full p-4" : "absolute inset-0 p-4"
+          isEditMode ? "w-full h-full p-2" : "absolute inset-0 p-4"
         )}
       >
         <div 
           className="flex flex-col justify-center transition-all duration-500 origin-center"
           style={{ 
-            // In Edit mode, we fit the grid to 90%.
+            // In Edit mode, we fit the grid to 100% of available space.
             // Requirement updated: 1.3x larger than the previous 1.5x version.
             // New Preview Scale (at 170%): 0.675 * 1.3 = autoScale * 0.8775
-            transform: `translate(${!isEditMode ? (gridStyle.xPosition || 50) - 50 : 0}%, ${!isEditMode ? gridStyle.yPosition - 50 : 0}%) scale(${isEditMode ? (autoScale * 0.9) : (autoScale * 0.8775 * (gridStyle.scale / 170))})`,
+            transform: `translate(${!isEditMode ? (gridStyle.xPosition || 50) - 50 : 0}%, ${!isEditMode ? gridStyle.yPosition - 50 : 0}%) scale(${isEditMode ? editScale : (autoScale * 0.8775 * (gridStyle.scale / 170))})`,
             width: `${BASE_WIDTH}px`,
             maxWidth: 'none', // Allow full scaling
             maxHeight: 'none'
