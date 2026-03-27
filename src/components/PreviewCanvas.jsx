@@ -192,14 +192,25 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
     >
       {/* Background Layer (Preview Only) */}
       {!isEditMode && (
-        <div 
-          className={cn(
-            "absolute inset-0 transition-transform duration-150 ease-out",
-            backgroundStyle,
-            isDragging ? "cursor-grabbing" : "cursor-grab"
+        <>
+          <div 
+            className={cn(
+              "absolute inset-0 transition-transform duration-150 ease-out",
+              backgroundStyle,
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            )}
+            style={transformStyle}
+          />
+          {/* Optimization: Hidden image for better browser priority handling */}
+          {bgType === 'preset' && (
+            <img 
+              src={`/backgrounds/${bgValue === 'modern' ? 'modern' : bgValue}.png`}
+              className="hidden" 
+              alt=""
+              fetchpriority="high"
+            />
           )}
-          style={transformStyle}
-        />
+        </>
       )}
 
       {/* Background Dim Layer (Preview Only) */}

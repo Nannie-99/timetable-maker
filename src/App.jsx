@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
 import { useTimetableState } from './hooks/useTimetableState';
 import PreviewCanvas from './components/PreviewCanvas';
-import Controls from './components/Controls';
+const Controls = lazy(() => import('./components/Controls'));
 import { Download, Info, X, ChevronDown, ChevronUp } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { Analytics } from "@vercel/analytics/react";
@@ -174,12 +174,27 @@ export default function App() {
                   
                   {infoAccordions.updates && (
                     <div className="p-4 pt-0 space-y-3 animate-in slide-in-from-top-2 duration-300">
-                      <div className="bg-white/5 border border-white/5 rounded-xl p-4 mt-2">
+                      {/* v1.0.1 */}
+                      <div className="bg-white/10 border border-accent-neon/20 rounded-xl p-4 mt-2">
                         <div className="flex items-center justify-between mb-3">
-                          <span className="text-xs font-bold text-accent-neon bg-accent-neon/10 px-2 py-0.5 rounded-lg">v1.0.0</span>
+                          <span className="text-xs font-bold text-accent-neon bg-accent-neon/10 px-2 py-0.5 rounded-lg">v1.0.1</span>
+                          <span className="text-[10px] text-white/30 font-medium">2026.03.28</span>
+                        </div>
+                        <ul className="text-[11px] text-white/70 space-y-2 list-disc pl-4 marker:text-accent-neon/50">
+                          <li className="font-bold text-white">성능 및 안정성 최적화</li>
+                          <li>화면 비율 로딩 속도 및 렌더링 효율성 개선</li>
+                          <li>앱 초기 로딩 시 발생하던 미세한 크래시 현상 해결</li>
+                          <li>폰트 로딩 방식 최적화로 텍스트 깜빡임 방지</li>
+                        </ul>
+                      </div>
+
+                      {/* v1.0.0 */}
+                      <div className="bg-white/5 border border-white/5 rounded-xl p-4 opacity-60">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-xs font-bold text-white/40 bg-white/5 px-2 py-0.5 rounded-lg">v1.0.0</span>
                           <span className="text-[10px] text-white/30 font-medium">2026.03.20</span>
                         </div>
-                        <ul className="text-[11px] text-white/50 space-y-2 list-disc pl-4 marker:text-accent-neon/50">
+                        <ul className="text-[11px] text-white/50 space-y-2 list-disc pl-4">
                           <li>프리미엄 시간표 테마 14종 출시</li>
                           <li>사용자 맞춤형 위치/크기 정밀 조절 시스템</li>
                           <li>내 갤러리 속 커스텀 배경 이미지 업로드</li>
@@ -213,13 +228,19 @@ export default function App() {
         </div>
         
         <div className="h-[55%] border-t border-canvas-border bg-black/90 backdrop-blur-xl">
-          <Controls 
-            state={state} 
-            updateState={updateState} 
-            updateGridCell={updateGridCell}
-            updateTime={updateTime}
-            resetState={resetState}
-          />
+          <Suspense fallback={
+            <div className="h-full flex items-center justify-center">
+              <div className="animate-spin w-8 h-8 border-2 border-accent-neon border-t-transparent rounded-full" />
+            </div>
+          }>
+            <Controls 
+              state={state} 
+              updateState={updateState} 
+              updateGridCell={updateGridCell}
+              updateTime={updateTime}
+              resetState={resetState}
+            />
+          </Suspense>
         </div>
       </main>
 
