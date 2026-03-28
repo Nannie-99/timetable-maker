@@ -33,114 +33,75 @@ export default function App() {
   const handleDownload = async () => {
     if (!canvasRef.current || isDownloading) return;
     
+    const newWindow = window.open();
+    if (!newWindow) {
+      alert('팝업이 차단되었습니다. 설정을 변경해 주세요.');
+      return;
+    }
+
+    newWindow.document.write(`
+      <html><head><style>body { margin: 0; background: #000; display: flex; align-items: center; justify-content: center; height: 100dvh; color: #fff; font-family: sans-serif; }</style></head>
+      <body><div style="text-align: center;">🪄 고화질 배경화면 생성 중...<br/><span style="font-size: 12px; opacity: 0.6; margin-top: 8px; display: block;">잠시만 기다려 주세요</span></div></body></html>
+    `);
+
     setIsDownloading(true);
     const container = canvasRef.current;
     
-    // Exact dimensions of the preview container at the moment of capture
+    // Safety Strategy: 1440px (QHD) width is perfectly high-res for mobile
+    const targetWidth = 1440; 
     const originalWidth = container.offsetWidth;
     const originalHeight = container.offsetHeight;
+    let scaleFactor = targetWidth / originalWidth;
     
-    // 2026 Ultra-High Resolution Strategy: 
-    // Increase target width to 2560px (QHD+) to ensure pixel-perfect quality even after JPEG encoding.
-    const targetWidth = 2560; 
-    const scale = targetWidth / originalWidth;
+    // Safety cap for mobile memory
+    if (originalHeight * scaleFactor > 3072) {
+      scaleFactor = 3072 / originalHeight;
+    }
     
     try {
+      // Small delay for DOM stability
+      await new Promise(resolve => setTimeout(resolve, 200));
+
       const canvas = await html2canvas(container, {
         useCORS: true,
-        scale: scale, 
+        scale: scaleFactor, 
         backgroundColor: '#000000',
         logging: false,
         width: originalWidth,
         height: originalHeight,
-        windowWidth: originalWidth,
-        windowHeight: originalHeight,
-        imageTimeout: 0,
-        // High-performance rendering hints
-        allowTaint: true,
-        backgroundColor: null,
-        onclone: (clonedDoc) => {
-          const clonedEl = clonedDoc.querySelector('[data-canvas-container]');
-          if (clonedEl) {
-            clonedEl.style.width = `${originalWidth}px`;
-            clonedEl.style.height = `${originalHeight}px`;
-            clonedEl.style.minWidth = `${originalWidth}px`;
-            clonedEl.style.maxWidth = `${originalWidth}px`;
-            clonedEl.style.minHeight = `${originalHeight}px`;
-            clonedEl.style.maxHeight = `${originalHeight}px`;
-            clonedEl.style.borderRadius = '0';
-            clonedEl.style.position = 'fixed';
-            clonedEl.style.top = '0';
-            clonedEl.style.left = '0';
-            clonedEl.style.margin = '0';
-            clonedEl.style.padding = '0';
-            clonedEl.style.transform = 'none';
-            clonedEl.style.boxShadow = 'none';
-            clonedEl.style.overflow = 'hidden';
-            clonedEl.style.display = 'block';
-
-            // Boost image quality in the clone
-            const imgs = clonedEl.querySelectorAll('img');
-            imgs.forEach(img => {
-              img.style.width = '100%';
-              img.style.height = '100%';
-              img.style.objectFit = 'cover'; // Support for 2026 rendering standards
-              img.style.display = 'block';
-              img.style.imageRendering = 'high-quality';
-              img.style.transform = 'none';
-            });
-
-            // Ensure all text is sharp and perfectly aligned
-            const allElements = clonedEl.querySelectorAll('*');
-            allElements.forEach(el => {
-              if (el instanceof HTMLElement) {
-                el.style.textShadow = 'none';
-                el.style.webkitFontSmoothing = 'antialiased';
-                el.style.fontVariantNumeric = 'tabular-nums';
-                
-                // Extra safety for flexbox centering in capture
-                if (el.classList.contains('flex')) {
-                  el.style.display = 'flex';
-                  el.style.alignItems = 'center';
-                  el.style.justifyContent = 'center';
-                }
-              }
-            });
-          }
-        }
+        scrollY: -window.scrollY,
+        scrollX: -window.scrollX,
+        imageTimeout: 15000,
+        // 2026 Strategy: No onclone style overrides. 
+        // WYSIWYG (What You See Is What You Get) - Capture EXACTLY what the user sees.
       });
       
-      // Generate ultra-high quality JPEG data URL
-      // Priority: Quality 1.0 (Maximum)
-      const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
       
-      // Open in new window for direct gallery save (Long-press)
-      const newWindow = window.open();
-      if (newWindow) {
-        newWindow.document.write(`
-          <html>
-            <head>
-              <title>초고화질 배경화면 저장</title>
-              <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-              <style>
-                body { margin: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100dvh; overflow: hidden; }
-                img { height: 100dvh; width: 100vw; object-fit: contain; cursor: pointer; -webkit-touch-callout: default; }
-                .hint { position: fixed; bottom: 30px; left: 0; right: 0; text-align: center; color: #fff; font-family: -apple-system, sans-serif; font-size: 14px; font-weight: 500; opacity: 0.9; pointer-events: none; text-shadow: 0 2px 8px rgba(0,0,0,0.8); background: rgba(0,0,0,0.3); padding: 10px; backdrop-filter: blur(5px); }
-              </style>
-            </head>
-            <body>
-              <img src="${dataUrl}" alt="Timetable Wallpaper" />
-              <div class="hint">💡 이미지를 길게 눌러 [사진 앱에 저장] 하세요</div>
-            </body>
-          </html>
-        `);
-        newWindow.document.close();
-      } else {
-        alert('팝업이 차단되었습니다. 팝업 허용 후 다시 시도해 주세요.');
-      }
+      newWindow.document.close();
+      newWindow.document.open();
+      newWindow.document.write(`
+        <html>
+          <head>
+            <title>초고화질 배경화면 저장</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <style>
+              body { margin: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100dvh; overflow: hidden; }
+              img { height: 100dvh; width: 100vw; object-fit: contain; cursor: pointer; -webkit-touch-callout: default; }
+              .hint { position: fixed; bottom: 30px; left: 0; right: 0; text-align: center; color: #fff; font-family: -apple-system, sans-serif; font-size: 14px; font-weight: 500; opacity: 0.9; pointer-events: none; text-shadow: 0 2px 8px rgba(0,0,0,0.8); background: rgba(0,0,0,0.3); padding: 10px; backdrop-filter: blur(5px); }
+            </style>
+          </head>
+          <body>
+            <img src="${dataUrl}" alt="Timetable Wallpaper" />
+            <div class="hint">💡 이미지를 길게 눌러 [사진 앱에 저장] 하세요</div>
+          </body>
+        </html>
+      `);
+      newWindow.document.close();
     } catch (err) {
-      console.error('Download failed', err);
-      alert('다운로드 중 오류가 발생했습니다.');
+      console.error('Download error:', err);
+      newWindow.close();
+      alert('이미지 생성 도중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       setIsDownloading(false);
     }
@@ -343,7 +304,7 @@ export default function App() {
 
       <main className="flex-1 flex flex-col overflow-hidden relative">
         <div className="flex-1 p-4 flex items-center justify-center bg-black/50 overflow-hidden">
-          <PreviewCanvas state={state} updateState={updateState} canvasRef={canvasRef} isExporting={isExporting} />
+          <PreviewCanvas state={state} updateState={updateState} canvasRef={canvasRef} isExporting={isDownloading} />
         </div>
         
         <div className="h-[55%] border-t border-canvas-border bg-black/90 backdrop-blur-xl">

@@ -156,7 +156,8 @@ export default function PreviewCanvas({ state, updateState, canvasRef, isExporti
     <div 
       ref={canvasRef}
       className={cn(
-        "relative rounded-3xl transition-all duration-500 bg-[#1a1a1a]",
+        "relative transition-all duration-500 bg-[#1a1a1a]",
+        !isExporting && "rounded-3xl", // Pure rectangle for export
         isEditMode 
           ? "h-full w-full flex flex-col items-center justify-center p-4 bg-[#111] overflow-auto" 
           : "h-full w-auto max-w-full overflow-hidden"
@@ -221,6 +222,7 @@ export default function PreviewCanvas({ state, updateState, canvasRef, isExporti
         )}
       >
         <div 
+          id="preview-capture-area"
           className="flex flex-col justify-center transition-all duration-500 origin-center"
           style={{ 
             transform: `translate(${!isEditMode ? (gridStyle.xPosition || 50) - 50 : 0}%, ${!isEditMode ? gridStyle.yPosition - 50 : 0}%) scale(${isEditMode ? editScale : (autoScale * 0.8775 * (gridStyle.scale / 170))})`,
@@ -240,104 +242,140 @@ export default function PreviewCanvas({ state, updateState, canvasRef, isExporti
                 gridStyle.roundness === 'lot' && "rounded-[22px]"
               )}
               style={{ 
-                aspectRatio: '1.7 / 1',
                 backgroundColor: 'transparent',
-                border: 'none'
+                border: 'none',
+                height: '51px',
+                display: 'flex'
               }}
             ></div>
             {['월', '화', '수', '목', '금'].map(day => (
               <div 
                 key={day} 
+                data-timetable-cell="header"
                 className={cn(
-                  "flex items-center justify-center text-[18px] font-bold opacity-85 transition-all duration-300",
+                  "flex items-center justify-center text-[17px] font-bold opacity-85 transition-all duration-300",
                   gridStyle.roundness === 'some' && "rounded-lg",
                   gridStyle.roundness === 'lot' && "rounded-[22px]"
                 )}
-                style={{ 
-                  color: gridStyle.fontColor,
-                  fontFamily: gridStyle.fontFamily === 'rounded' 
-                    ? "'Jua', sans-serif" 
-                    : gridStyle.fontFamily === 'thick' 
-                      ? "'Black Han Sans', sans-serif" 
-                      : "'Inter', sans-serif",
-                  aspectRatio: '1.7 / 1',
-                  backgroundColor: 'transparent',
-                  border: 'none'
-                }}
-              >
-                {day}
-              </div>
-            ))}
+                    style={{ 
+                      color: gridStyle.fontColor,
+                      fontFamily: gridStyle.fontFamily === 'rounded' 
+                        ? "'Jua', sans-serif" 
+                        : gridStyle.fontFamily === 'thick' 
+                          ? "'Black Han Sans', sans-serif" 
+                          : "'Inter', sans-serif",
+                      height: '51px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <span 
+                      style={{ 
+                        height: '100%',
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        lineHeight: '1.2',
+                        transform: isExporting ? 'translateY(-1.5px)' : 'none'
+                      }}
+                    >
+                      {day}
+                    </span>
+                  </div>
+                ))}
 
             {/* Rows */}
             {Array.from({ length: periods }).map((_, r) => (
               <React.Fragment key={r}>
                 <div 
+                  data-timetable-cell="number"
                   className={cn(
-                    "flex flex-col items-center justify-center font-bold opacity-85 transition-all duration-300 overflow-hidden",
+                    "flex flex-col items-center justify-center font-bold opacity-85 transition-all duration-300",
                     gridStyle.roundness === 'some' && "rounded-lg",
                     gridStyle.roundness === 'lot' && "rounded-[22px]"
                   )} 
-                  style={{ 
-                    color: gridStyle.fontColor,
-                    fontFamily: gridStyle.fontFamily === 'rounded' 
-                      ? "'Jua', sans-serif" 
-                      : gridStyle.fontFamily === 'thick' 
-                        ? "'Black Han Sans', sans-serif" 
-                        : "'Inter', sans-serif",
-                    aspectRatio: '1.7 / 1',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    fontSize: '16px',
-                    lineHeight: '1',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <div className="flex flex-col items-center justify-center w-full h-full" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ display: 'block', transform: 'translateY(1px)' }}>{r + 1}</span>
-                    {showTimes && (
-                      <span className="text-[10px] leading-none text-center mt-0.5" style={{ display: 'block' }}>
-                        {times[r]?.start}<br/>{times[r]?.end}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {Array.from({ length: 5 }).map((_, c) => (
-                  <div 
-                    key={c}
-                    className={cn(
-                      "flex items-center justify-center overflow-hidden transition-all duration-300 border border-white/5",
-                      gridStyle.roundness === 'some' && "rounded-lg",
-                      gridStyle.roundness === 'lot' && "rounded-[22px]"
-                    )}
-                    style={{ 
-                      aspectRatio: '1.7 / 1',
-                      padding: '2px 4px',
-                      backgroundColor: gridStyle.showCellBg 
-                        ? (gridStyle.cellColor + Math.round(gridStyle.opacity * 255).toString(16).padStart(2, '0'))
-                        : 'transparent',
-                      color: gridStyle.fontColor,
-                      border: gridStyle.showBorder ? `1px solid ${gridStyle.borderColor}` : 'none'
-                    }}
-                  >
-                    <span 
-                      className="w-full text-center break-all line-clamp-3 font-medium leading-[1.2] text-[18px]"
                       style={{ 
+                        color: gridStyle.fontColor,
                         fontFamily: gridStyle.fontFamily === 'rounded' 
                           ? "'Jua', sans-serif" 
                           : gridStyle.fontFamily === 'thick' 
                             ? "'Black Han Sans', sans-serif" 
-                            : "'Inter', sans-serif"
+                            : "'Inter', sans-serif",
+                        height: '51px',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        fontSize: '17px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                       }}
                     >
-                      {gridData[r][c]}
-                    </span>
-                  </div>
+                      <div className="w-full h-full flex flex-col items-center justify-center text-center" style={{ 
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: showTimes ? 'center' : 'flex-end', 
+                        justifyContent: 'center',
+                        paddingRight: showTimes ? '0' : '4px',
+                        height: '51px',
+                        transform: isExporting ? 'translateY(-6px)' : 'none'
+                      }}>
+                        <span style={{ display: 'block', lineHeight: '1' }}>{r + 1}</span>
+                        {showTimes && (
+                          <span className="text-[10px] leading-none text-center mt-0.5" style={{ display: 'block' }}>
+                            {times[r]?.start}<br/>{times[r]?.end}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {Array.from({ length: 5 }).map((_, c) => (
+                      <div 
+                        key={c}
+                        data-timetable-cell="content"
+                        className={cn(
+                          "transition-all duration-300 border border-white/5",
+                          gridStyle.roundness === 'some' && "rounded-lg",
+                          gridStyle.roundness === 'lot' && "rounded-[22px]"
+                        )}
+                        style={{ 
+                          height: '51px',
+                          backgroundColor: gridStyle.showCellBg 
+                            ? (gridStyle.cellColor + Math.round(gridStyle.opacity * 255).toString(16).padStart(2, '0'))
+                            : 'transparent',
+                          color: gridStyle.fontColor,
+                          border: gridStyle.showBorder ? `1px solid ${gridStyle.borderColor}` : 'none',
+                          overflow: 'visible',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <span 
+                          className="w-full text-center break-words font-medium text-[18px]"
+                          style={{ 
+                            fontFamily: gridStyle.fontFamily === 'rounded' 
+                              ? "'Jua', sans-serif" 
+                              : gridStyle.fontFamily === 'thick' 
+                                ? "'Black Han Sans', sans-serif" 
+                                : "'Inter', sans-serif",
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '100%',
+                            lineHeight: '1.2',
+                            paddingBottom: '2px', // Return to baseline used in preview
+                            transform: isExporting ? 'translateY(-6px)' : 'none' // Increase shift to -6px as requested
+                          }}
+                        >
+                          {gridData[r][c]}
+                        </span>
+                      </div>
+                    ))}
+                  </React.Fragment>
                 ))}
-            </React.Fragment>
-          ))}
           </div>
         </div>
       </div>
