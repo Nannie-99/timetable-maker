@@ -75,13 +75,22 @@ export default function App() {
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
       if (blob) {
         const url = URL.createObjectURL(blob);
+        const fileName = `timetable_wallpaper_${new Date().getTime()}.png`;
+        
         const link = document.createElement('a');
-        link.download = `timetable_wallpaper_${new Date().getTime()}.png`;
+        link.style.display = 'none';
         link.href = url;
+        link.download = fileName;
+        
+        // For mobile stability, append to document body before clicking
+        document.body.appendChild(link);
         link.click();
         
-        // Clean up
-        setTimeout(() => URL.revokeObjectURL(url), 100);
+        // Slightly longer cleanup delay to ensure mobile browsers start the download process
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 1000);
       }
     } catch (err) {
       console.error('Download failed', err);
@@ -92,7 +101,7 @@ export default function App() {
   };
 
   const toggleInfoAccordion = (key) => {
-    setOpenAccordions(prev => ({ ...prev, [key]: !prev[key] }));
+    setInfoAccordions(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   return (
