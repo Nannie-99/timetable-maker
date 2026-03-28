@@ -233,8 +233,8 @@ function BackgroundTab({ state, updateState }) {
             className="w-full accent-accent-neon"
           />
           <div className="flex justify-between px-0.5">
-            <span className="text-[10px] opacity-30 font-bold">어둡게</span>
             <span className="text-[10px] opacity-30 font-bold">밝게</span>
+            <span className="text-[10px] opacity-30 font-bold">어둡게</span>
           </div>
         </div>
       </div>

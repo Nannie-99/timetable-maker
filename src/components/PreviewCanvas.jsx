@@ -249,7 +249,7 @@ export default function PreviewCanvas({ state, updateState, canvasRef, isExporti
               <div 
                 key={day} 
                 className={cn(
-                  "flex items-center justify-center text-[16px] font-bold opacity-85 transition-all duration-300",
+                  "flex items-center justify-center text-[18px] font-bold opacity-85 transition-all duration-300",
                   gridStyle.roundness === 'some' && "rounded-lg",
                   gridStyle.roundness === 'lot' && "rounded-[22px]"
                 )}
@@ -323,15 +323,13 @@ export default function PreviewCanvas({ state, updateState, canvasRef, isExporti
                     }}
                   >
                     <span 
-                      className="w-full text-center break-all line-clamp-3 font-medium leading-[1.2] text-[14px]"
+                      className="w-full text-center break-all line-clamp-3 font-medium leading-[1.2] text-[18px]"
                       style={{ 
                         fontFamily: gridStyle.fontFamily === 'rounded' 
                           ? "'Jua', sans-serif" 
                           : gridStyle.fontFamily === 'thick' 
                             ? "'Black Han Sans', sans-serif" 
-                            : "'Inter', sans-serif",
-                        display: 'block',
-                        width: '100%'
+                            : "'Inter', sans-serif"
                       }}
                     >
                       {gridData[r][c]}
