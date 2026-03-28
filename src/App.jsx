@@ -11,6 +11,7 @@ export default function App() {
   const canvasRef = useRef(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [infoAccordions, setInfoAccordions] = useState({
     profile: true,
     intro: false,
@@ -32,17 +33,56 @@ export default function App() {
     if (!canvasRef.current || isDownloading) return;
     
     setIsDownloading(true);
+    const container = canvasRef.current;
+    
+    // Determine target dimensions (Standard 1080px width)
+    const targetWidth = 1080;
+    const rect = container.getBoundingClientRect();
+    const aspectRatio = rect.width / rect.height;
+    const targetHeight = targetWidth / aspectRatio;
+    
     try {
-      const canvas = await html2canvas(canvasRef.current, {
+      // 2026 Strategy: capture the container at its CURRENT DOM size and let html2canvas 
+      // handle the scale. Forcing hard PX on the cloned EL ensures no layout reflow.
+      const canvas = await html2canvas(container, {
         useCORS: true,
-        scale: 3, 
+        scale: targetWidth / container.offsetWidth, // High DPI capture
         backgroundColor: '#000000',
+        logging: false,
+        width: container.offsetWidth,
+        height: container.offsetHeight,
+        onclone: (clonedDoc) => {
+          const clonedEl = clonedDoc.querySelector('[data-canvas-container]');
+          if (clonedEl) {
+            // REMOVE ALL RESPONSIVE JUNK: Force pixel-perfect static layout matching the preview
+            clonedEl.style.width = `${container.offsetWidth}px`;
+            clonedEl.style.height = `${container.offsetHeight}px`;
+            clonedEl.style.minWidth = `${container.offsetWidth}px`;
+            clonedEl.style.minHeight = `${container.offsetHeight}px`;
+            clonedEl.style.maxWidth = `${container.offsetWidth}px`;
+            clonedEl.style.maxHeight = `${container.offsetHeight}px`;
+            clonedEl.style.borderRadius = '0';
+            clonedEl.style.position = 'relative';
+            clonedEl.style.margin = '0';
+            clonedEl.style.padding = '0';
+            clonedEl.style.transform = 'none';
+            clonedEl.style.display = 'block';
+            clonedEl.style.boxShadow = 'none';
+          }
+        }
       });
       
-      const link = document.createElement('a');
-      link.download = `timetable_wallpaper_${new Date().getTime()}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `timetable_wallpaper_${new Date().getTime()}.png`;
+        link.href = url;
+        link.click();
+        
+        // Clean up
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      }
     } catch (err) {
       console.error('Download failed', err);
       alert('다운로드 중 오류가 발생했습니다.');
@@ -52,12 +92,11 @@ export default function App() {
   };
 
   const toggleInfoAccordion = (key) => {
-    setInfoAccordions(prev => ({ ...prev, [key]: !prev[key] }));
+    setOpenAccordions(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   return (
     <div className="flex flex-col h-dvh max-w-lg mx-auto bg-black text-white overflow-hidden border-x border-canvas-border relative">
-      {/* Top Header */}
       <header className="py-[0.7rem] px-4 relative flex items-center justify-center border-b border-canvas-border bg-black/80 backdrop-blur-md z-10">
         <h1 className="text-lg font-bold tracking-tight text-white/40">시간표 메이커</h1>
         <button 
@@ -68,12 +107,10 @@ export default function App() {
         </button>
       </header>
 
-      {/* Info Modal */}
       {isInfoOpen && (
         <div className="absolute inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsInfoOpen(false)} />
           <div className="relative w-full max-w-sm h-[540px] bg-[#1a1a1a] border border-white/10 rounded-3xl shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col overflow-hidden">
-            {/* Header / Close (Top Right) */}
             <button 
               onClick={() => setIsInfoOpen(false)}
               className="absolute top-4 right-4 p-1 rounded-full hover:bg-white/5 opacity-40 hover:opacity-100 transition-all z-20"
@@ -81,10 +118,8 @@ export default function App() {
               <X size={20} />
             </button>
             
-            {/* Scrollable Content Section */}
             <div className="flex-1 overflow-y-auto p-6 pt-10 content-scrollbar">
               <div className="space-y-4">
-                {/* 1. Developer Profile Accordion */}
                 <section className="bg-white/5 border border-white/5 rounded-2xl overflow-hidden transition-all">
                   <button 
                     onClick={() => toggleInfoAccordion('profile')}
@@ -132,7 +167,6 @@ export default function App() {
                   )}
                 </section>
 
-                {/* 2. App Introduction Accordion */}
                 <section className="bg-white/5 border border-white/5 rounded-2xl overflow-hidden transition-all">
                   <button 
                     onClick={() => toggleInfoAccordion('intro')}
@@ -159,7 +193,6 @@ export default function App() {
                   )}
                 </section>
 
-                {/* 3. Update Log Accordion */}
                 <section className="bg-white/5 border border-white/5 rounded-2xl overflow-hidden transition-all">
                   <button 
                     onClick={() => toggleInfoAccordion('updates')}
@@ -174,7 +207,6 @@ export default function App() {
                   
                   {infoAccordions.updates && (
                     <div className="p-4 pt-0 space-y-3 animate-in slide-in-from-top-2 duration-300">
-                      {/* v1.0.1 */}
                       <div className="bg-white/10 border border-accent-neon/20 rounded-xl p-4 mt-2">
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-xs font-bold text-accent-neon bg-accent-neon/10 px-2 py-0.5 rounded-lg">v1.0.1</span>
@@ -188,7 +220,6 @@ export default function App() {
                         </ul>
                       </div>
 
-                      {/* v1.0.0 */}
                       <div className="bg-white/5 border border-white/5 rounded-xl p-4 opacity-60">
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-xs font-bold text-white/40 bg-white/5 px-2 py-0.5 rounded-lg">v1.0.0</span>
@@ -208,7 +239,6 @@ export default function App() {
               </div>
             </div>
             
-            {/* Sticky Footer Section */}
             <div className="p-4 bg-black/40 border-t border-white/5">
               <button 
                 onClick={() => setIsInfoOpen(false)}
@@ -221,10 +251,9 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden relative">
         <div className="flex-1 p-4 flex items-center justify-center bg-black/50 overflow-hidden">
-          <PreviewCanvas state={state} updateState={updateState} canvasRef={canvasRef} />
+          <PreviewCanvas state={state} updateState={updateState} canvasRef={canvasRef} isExporting={isExporting} />
         </div>
         
         <div className="h-[55%] border-t border-canvas-border bg-black/90 backdrop-blur-xl">
@@ -244,7 +273,6 @@ export default function App() {
         </div>
       </main>
 
-      {/* Fixed Bottom Action */}
       <div className="p-4 bg-black/80 backdrop-blur-md border-t border-canvas-border flex flex-col gap-2">
         <button
           onClick={handleDownload}

@@ -6,24 +6,22 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-const PRESETS = {
-  modern: 'bg-cover bg-center bg-[url("/backgrounds/modern.png")]',
-  kitsch: 'bg-cover bg-center bg-[url("/backgrounds/kitsch.png")]',
-  cyber: 'bg-cover bg-center bg-[url("/backgrounds/cyber.png")]',
-  coffee: 'bg-cover bg-center bg-[url("/backgrounds/coffee.png")]',
-  simple: 'bg-cover bg-center bg-[url("/backgrounds/simple.png")]',
-  pixel: 'bg-cover bg-center bg-[url("/backgrounds/pixel.png")]',
-  yoonseul: 'bg-cover bg-center bg-[url("/backgrounds/nature.png")]',
-  lemon: 'bg-cover bg-center bg-[url("/backgrounds/lemon.png")]',
-  retro: 'bg-cover bg-center bg-[url("/backgrounds/retro.png")]',
-  ducks: 'bg-cover bg-center bg-[url("/backgrounds/ducks.png")]',
-  tomato: 'bg-cover bg-center bg-[url("/backgrounds/tomato.png")]',
-  pudding: 'bg-cover bg-center bg-[url("/backgrounds/pudding.png")]',
-  koi: 'bg-cover bg-center bg-[url("/backgrounds/koi.png")]',
-  dog: 'bg-cover bg-center bg-[url("/backgrounds/dog.png")]',
+const PRESET_FILES = {
+  '강아지': '/backgrounds/강아지.png',
+  '고양이': '/backgrounds/고양이.png',
+  '눈사람': '/backgrounds/눈사람.jpg',
+  '도서관': '/backgrounds/도서관.jpg',
+  '레몬': '/backgrounds/레몬.png',
+  '바다': '/backgrounds/바다.jpg',
+  '성': '/backgrounds/성.jpg',
+  '케이크': '/backgrounds/케이크.jpg',
+  '튤립': '/backgrounds/튤립.png',
+  '푸딩': '/backgrounds/푸딩.jpg',
+  '픽셀': '/backgrounds/픽셀.png',
+  '하트': '/backgrounds/하트.png',
 };
 
-export default function PreviewCanvas({ state, updateState, canvasRef }) {
+export default function PreviewCanvas({ state, updateState, canvasRef, isExporting = false }) {
   const {
     aspectRatio,
     bgType,
@@ -54,7 +52,6 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
     const updateScale = () => {
       if (!canvasRef.current) return;
       const rect = canvasRef.current.getBoundingClientRect();
-      // Use the actual rendered width of the wallpaper/container
       setAutoScale(rect.width / BASE_WIDTH);
     };
 
@@ -65,32 +62,15 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
     return () => observer.disconnect();
   }, [canvasRef]);
 
-  const currentRatio = useMemo(() => {
-    if (aspectRatio === '9:19.5') return '9 / 19.5';
-    if (aspectRatio === '9:20') return '9 / 20';
-    return '9 / 16';
+  const currentRatioString = useMemo(() => {
+    if (aspectRatio === '9:19.5') return '9/19.5';
+    if (aspectRatio === '9:20') return '9/20';
+    return '9/16';
   }, [aspectRatio]);
 
-  const backgroundStyle = useMemo(() => {
-    if (isEditMode) return 'bg-[#111]';
-    if (bgType === 'preset') return PRESETS[bgValue] || PRESETS.modern;
-    if (bgType === 'custom') return `bg-cover bg-center`;
-    return '';
-  }, [bgType, bgValue, isEditMode]);
-
-  const customBgStyle = bgType === 'custom' && !isEditMode ? { backgroundImage: `url(${bgValue})` } : {};
+  // Combine user transform
+  const finalScale = bgTransform.scale;
   
-  // Combine user transform and the modern-only extra scale
-  const finalScale = bgTransform.scale * (bgValue === 'modern' ? 1.1 : 1);
-  const transformStyle = {
-    transform: `translate(${bgTransform.x}px, ${bgTransform.y}px) scale(${finalScale})`,
-    ...customBgStyle
-  };
-
-  const containerStyle = { 
-    aspectRatio: currentRatio,
-  };
-
   const handleDragStart = (e) => {
     if (isEditMode) return;
     setIsDragging(true);
@@ -104,7 +84,6 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
     const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
     const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
     
-    // Prevent default to disable scrolling while dragging on mobile
     if (e.type === 'touchmove') e.preventDefault();
 
     updateState({
@@ -121,21 +100,18 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
   };
 
   // Constraint logic for background dragging
-  // This ensures the background image stays within the canvas area
   useEffect(() => {
-    if (isEditMode || !canvasRef.current || bgType !== 'preset' && bgType !== 'custom') return;
+    if (isEditMode || !canvasRef.current || (bgType !== 'preset' && bgType !== 'custom')) return;
 
     const container = canvasRef.current;
     const rect = container.getBoundingClientRect();
     const containerWidth = rect.width;
     const containerHeight = rect.height;
 
-    // The image is scaled by finalScale (from line 64)
     const currentScale = finalScale;
     const imageWidth = containerWidth * currentScale;
     const imageHeight = containerHeight * currentScale;
 
-    // Max allowed displacement (half of the extra width/height)
     const maxX = (imageWidth - containerWidth) / 2;
     const maxY = (imageHeight - containerHeight) / 2;
 
@@ -153,20 +129,18 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
   }, [bgTransform, finalScale, isEditMode, bgType, canvasRef]);
 
 
-  // Calculate a scale specifically for Edit Mode to ensure the entire grid is visible regardless of period count
   const editScale = useMemo(() => {
     if (!canvasRef.current || !isEditMode) return autoScale * 0.9;
     
     const rect = canvasRef.current.getBoundingClientRect();
-    const padding = 40; // Reduced padding for better space utilization in Edit Mode
+    const padding = 40;
     const containerWidth = rect.width - padding;
     const containerHeight = rect.height - padding;
     
-    // Grid dimensions at scale 1
     const gridWidth = BASE_WIDTH;
-    const cellWidth = (BASE_WIDTH - 40) / 6; // 6 columns, 5 gaps of 8px
+    const cellWidth = (BASE_WIDTH - 40) / 6;
     const cellHeight = cellWidth / 1.7;
-    const gridHeight = (periods + 1) * cellHeight + (periods * 8); // periods+1 rows, periods gaps
+    const gridHeight = (periods + 1) * cellHeight + (periods * 8);
     
     const sX = containerWidth / gridWidth;
     const sY = containerHeight / gridHeight;
@@ -174,14 +148,21 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
     return Math.min(sX, sY);
   }, [autoScale, periods, isEditMode, canvasRef]);
 
+  // 2026 Strategy: Use <img> tag for maximum image quality during canvas capture.
+  // CSS object-fit: cover will handle the aspect ratio preservation.
+  const bgImageSource = bgType === 'preset' ? PRESET_FILES[bgValue] || PRESET_FILES['강아지'] : bgValue;
+
   return (
     <div 
       ref={canvasRef}
       className={cn(
         "relative shadow-2xl transition-all duration-500 bg-[#1a1a1a]",
-        isEditMode ? "h-full w-full flex flex-col items-center justify-center p-4 bg-[#111] overflow-auto" : "h-full w-auto max-w-full rounded-3xl overflow-hidden"
+        isEditMode 
+          ? "h-full w-full flex flex-col items-center justify-center p-4 bg-[#111] overflow-auto" 
+          : "h-full w-auto max-w-full rounded-3xl overflow-hidden"
       )}
-      style={!isEditMode ? containerStyle : {}}
+      data-canvas-container
+      style={!isEditMode ? { aspectRatio: currentRatioString } : {}}
       onMouseDown={handleDragStart}
       onMouseMove={handleDragMove}
       onMouseUp={handleDragEnd}
@@ -190,30 +171,36 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
       onTouchMove={handleDragMove}
       onTouchEnd={handleDragEnd}
     >
-      {/* Background Layer (Preview Only) */}
+      {/* Background Layer (Back to <img> for high resolution capture) */}
       {!isEditMode && (
-        <>
-          <div 
-            className={cn(
-              "absolute inset-0 transition-transform duration-150 ease-out",
-              backgroundStyle,
-              isDragging ? "cursor-grabbing" : "cursor-grab"
-            )}
-            style={transformStyle}
-          />
-          {/* Optimization: Hidden image for better browser priority handling */}
-          {bgType === 'preset' && (
+        <div 
+          className={cn(
+            "absolute inset-0 transition-transform duration-150 ease-out overflow-hidden flex items-center justify-center",
+            isDragging ? "cursor-grabbing" : "cursor-grab"
+          )}
+          style={{
+            transform: `translate(${bgTransform.x}px, ${bgTransform.y}px) scale(${finalScale})`,
+            backgroundColor: (bgType !== 'preset' && bgType !== 'custom') ? '#111' : 'transparent',
+          }}
+        >
+          {(bgType === 'preset' || bgType === 'custom') && (
             <img 
-              src={`/backgrounds/${bgValue === 'modern' ? 'modern' : bgValue}.png`}
-              className="hidden" 
+              src={bgImageSource}
               alt=""
-              fetchpriority="high"
+              crossOrigin="anonymous"
+              className="absolute min-w-full min-h-full object-cover pointer-events-none"
+              style={{
+                width: '100%',
+                height: '100%',
+                // Force object-fit behavior via CSS which html2canvas 1.4.1+ supports better now
+                objectFit: 'cover'
+              }}
             />
           )}
-        </>
+        </div>
       )}
 
-      {/* Background Dim Layer (Preview Only) */}
+      {/* Background Dim Layer */}
       {!isEditMode && (
         <div 
           className="absolute inset-0 bg-black transition-opacity duration-300 pointer-events-none" 
@@ -231,12 +218,9 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
         <div 
           className="flex flex-col justify-center transition-all duration-500 origin-center"
           style={{ 
-            // In Edit mode, we fit the grid to 100% of available space.
-            // Requirement updated: 1.3x larger than the previous 1.5x version.
-            // New Preview Scale (at 170%): 0.675 * 1.3 = autoScale * 0.8775
             transform: `translate(${!isEditMode ? (gridStyle.xPosition || 50) - 50 : 0}%, ${!isEditMode ? gridStyle.yPosition - 50 : 0}%) scale(${isEditMode ? editScale : (autoScale * 0.8775 * (gridStyle.scale / 170))})`,
             width: `${BASE_WIDTH}px`,
-            maxWidth: 'none', // Allow full scaling
+            maxWidth: 'none',
             maxHeight: 'none'
           }}
         >
@@ -260,7 +244,7 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
               <div 
                 key={day} 
                 className={cn(
-                  "flex items-center justify-center text-[16px] font-bold opacity-40 transition-all duration-300",
+                  "flex items-center justify-center text-[16px] font-bold opacity-85 transition-all duration-300",
                   gridStyle.roundness === 'some' && "rounded-lg",
                   gridStyle.roundness === 'lot' && "rounded-[22px]"
                 )}
@@ -285,8 +269,7 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
               <React.Fragment key={r}>
                 <div 
                   className={cn(
-                    "flex flex-col justify-center text-[16px] font-bold opacity-60 transition-all duration-300",
-                    showTimes ? "items-center" : "items-end pr-3",
+                    "flex flex-col items-center justify-center font-bold opacity-85 transition-all duration-300 overflow-hidden",
                     gridStyle.roundness === 'some' && "rounded-lg",
                     gridStyle.roundness === 'lot' && "rounded-[22px]"
                   )} 
@@ -299,15 +282,22 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
                         : "'Inter', sans-serif",
                     aspectRatio: '1.7 / 1',
                     backgroundColor: 'transparent',
-                    border: 'none'
+                    border: 'none',
+                    fontSize: '16px',
+                    lineHeight: '1',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                 >
-                  <span>{r + 1}</span>
-                  {showTimes && (
-                    <span className="text-[12px] leading-tight text-center">
-                      {times[r]?.start}<br/>{times[r]?.end}
-                    </span>
-                  )}
+                  <div className="flex flex-col items-center justify-center w-full h-full" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ display: 'block', transform: 'translateY(1px)' }}>{r + 1}</span>
+                    {showTimes && (
+                      <span className="text-[10px] leading-none text-center mt-0.5" style={{ display: 'block' }}>
+                        {times[r]?.start}<br/>{times[r]?.end}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {Array.from({ length: 5 }).map((_, c) => (
                   <div 
@@ -347,7 +337,7 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
         </div>
       </div>
 
-      {/* Custom Text & Watermark (Preview Only) */}
+      {/* Custom Text & Watermark */}
       {!isEditMode && (
         <div 
           className="absolute bottom-6 inset-x-4 flex flex-col items-center gap-1 opacity-60 pointer-events-none"
@@ -366,8 +356,6 @@ export default function PreviewCanvas({ state, updateState, canvasRef }) {
           )}
         </div>
       )}
-
-      {/* No Watermark as requested */}
     </div>
   );
 }

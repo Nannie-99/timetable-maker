@@ -124,53 +124,39 @@ function TimetableTab({ state, updateState, updateGridCell }) {
 }
 
 function BackgroundTab({ state, updateState }) {
+  const [uploadError, setUploadError] = useState('');
   const presets = [
-    { id: 'modern', name: '모던', thumb: '/backgrounds/modern.png' },
-    { id: 'kitsch', name: '키치', thumb: '/backgrounds/kitsch.png' },
-    { id: 'cyber', name: '사이버', thumb: '/backgrounds/cyber.png' },
-    { id: 'coffee', name: '커피', thumb: '/backgrounds/coffee.png' },
-    { id: 'simple', name: '심플', thumb: '/backgrounds/simple.png' },
-    { id: 'pixel', name: '픽셀', thumb: '/backgrounds/pixel.png' },
-    { id: 'yoonseul', name: '윤슬', thumb: '/backgrounds/nature.png' },
-    { id: 'lemon', name: '레몬', thumb: '/backgrounds/lemon.png' },
-    { id: 'retro', name: '레트로', thumb: '/backgrounds/retro.png' },
-    { id: 'ducks', name: '오리', thumb: '/backgrounds/ducks.png' },
-    { id: 'tomato', name: '토마토', thumb: '/backgrounds/tomato.png' },
-    { id: 'pudding', name: '푸딩', thumb: '/backgrounds/pudding.png' },
-    { id: 'koi', name: '잉어', thumb: '/backgrounds/koi.png' },
-    { id: 'dog', name: '강아지', thumb: '/backgrounds/dog.png' },
+    { id: '강아지', name: '강아지', thumb: '/backgrounds/강아지.png' },
+    { id: '고양이', name: '고양이', thumb: '/backgrounds/고양이.png' },
+    { id: '눈사람', name: '눈사람', thumb: '/backgrounds/눈사람.jpg' },
+    { id: '도서관', name: '도서관', thumb: '/backgrounds/도서관.jpg' },
+    { id: '레몬', name: '레몬', thumb: '/backgrounds/레몬.png' },
+    { id: '바다', name: '바다', thumb: '/backgrounds/바다.jpg' },
+    { id: '성', name: '성', thumb: '/backgrounds/성.jpg' },
+    { id: '케이크', name: '케이크', thumb: '/backgrounds/케이크.jpg' },
+    { id: '튤립', name: '튤립', thumb: '/backgrounds/튤립.png' },
+    { id: '푸딩', name: '푸딩', thumb: '/backgrounds/푸딩.jpg' },
+    { id: '픽셀', name: '픽셀', thumb: '/backgrounds/픽셀.png' },
+    { id: '하트', name: '하트', thumb: '/backgrounds/하트.png' },
   ].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
+    setUploadError(''); // Reset error
+    
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const img = new Image();
-        img.onload = () => {
-          // Resize large images to avoid app freeze/localStorage limits
-          const MAX_WIDTH = 1200;
-          let width = img.width;
-          let height = img.height;
-          
-          if (width > MAX_WIDTH) {
-            height = (height * MAX_WIDTH) / width;
-            width = MAX_WIDTH;
-          }
-          
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Use medium quality to keep file size small
-          const resizedBase64 = canvas.toDataURL('image/jpeg', 0.8);
-          updateState({ bgType: 'custom', bgValue: resizedBase64 });
-        };
-        img.src = reader.result;
-      };
-      reader.readAsDataURL(file);
+      // 2026 Best Practice: Check file size before processing to prevent memory crash
+      // 10MB limit for stable mobile/web performance
+      const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+      if (file.size > MAX_SIZE) {
+        setUploadError(`지원 용량(최대 10MB) 초과`);
+        e.target.value = ''; // Reset input
+        return;
+      }
+
+      // Memory-efficient Blob URL
+      const imageUrl = URL.createObjectURL(file);
+      updateState({ bgType: 'custom', bgValue: imageUrl });
     }
   };
 
@@ -217,7 +203,10 @@ function BackgroundTab({ state, updateState }) {
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-bold opacity-60">나의 사진</label>
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-bold opacity-60">나의 사진</label>
+          {uploadError && <span className="text-[10px] text-red-500 font-bold animate-pulse">{uploadError}</span>}
+        </div>
         <div className="flex items-center gap-2">
           <input type="file" onChange={handleFileUpload} accept="image/*" id="bg-upload" className="hidden" />
           <label 
@@ -230,26 +219,53 @@ function BackgroundTab({ state, updateState }) {
         </div>
       </div>
 
-      <div className="space-y-4">
+      {/* Background Brightness Control */}
+      <div className="space-y-4 pt-4 border-t border-white/5">
         <div className="flex justify-between">
-          <label className="text-sm font-bold opacity-60">배경 크기 (Zoom)</label>
-          <span className="text-xs opacity-40">{Math.round((state.bgTransform?.scale || 1) * 100)}%</span>
+          <label className="text-sm font-bold opacity-60">배경 밝기</label>
+          <span className="text-xs opacity-40">{Math.round((1 - state.bgDim) * 100)}%</span>
         </div>
-        <div className="flex gap-4 items-center">
+        <div className="flex flex-col gap-1.5 px-0.5">
+          <input 
+            type="range" min="0" max="0.9" step="0.01" 
+            value={state.bgDim} 
+            onChange={(e) => updateState({ bgDim: parseFloat(e.target.value) })}
+            className="w-full accent-accent-neon"
+          />
+          <div className="flex justify-between px-0.5">
+            <span className="text-[10px] opacity-30 font-bold">어둡게</span>
+            <span className="text-[10px] opacity-30 font-bold">밝게</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Background Zoom Control */}
+      <div className="space-y-4 pt-4 border-t border-white/5">
+        <div className="flex justify-between">
+          <label className="text-sm font-bold opacity-60">배경 확대</label>
+          <div className="flex items-center gap-2">
+            <span className="text-xs opacity-40">{Math.round((state.bgTransform?.scale || 1) * 100)}%</span>
+            <button 
+              onClick={() => updateState({ bgTransform: { scale: 1, x: 0, y: 0 }})}
+              className="px-2 py-1 bg-white/10 border border-white/5 rounded-lg text-[10px] font-bold text-white/60 hover:text-white hover:bg-white/20 transition-all"
+            >
+              초기화
+            </button>
+          </div>
+        </div>
+        <div className="flex flex-col gap-1.5 px-0.5">
           <input 
             type="range" min="1" max="2.5" step="0.01" 
             value={state.bgTransform?.scale || 1} 
             onChange={(e) => updateState({ bgTransform: { ...state.bgTransform, scale: parseFloat(e.target.value) }})}
-            className="flex-1 accent-accent-neon"
+            className="w-full accent-accent-neon"
           />
-          <button 
-            onClick={() => updateState({ bgTransform: { scale: 1, x: 0, y: 0 }})}
-            className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[10px] font-bold hover:bg-white/10 transition-all flex-shrink-0"
-          >
-            초기화
-          </button>
+          <div className="flex justify-between px-0.5">
+            <span className="text-[10px] opacity-30 font-bold">축소</span>
+            <span className="text-[10px] opacity-30 font-bold">확대</span>
+          </div>
         </div>
-        <p className="text-[10px] opacity-40 text-center">미리보기의 배경을 드래그하여 위치를 옮길 수 있습니다.</p>
+        <p className="text-[10px] opacity-40 text-center mt-2">미리보기의 배경을 드래그하여 위치를 옮길 수 있습니다.</p>
       </div>
 
     </div>
