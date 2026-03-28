@@ -309,33 +309,34 @@ export default function PreviewCanvas({ state, updateState, canvasRef, isExporti
                     key={c}
                     className={cn(
                       "flex flex-col items-center justify-center overflow-hidden transition-all duration-300 border border-white/5",
-                    gridStyle.roundness === 'some' && "rounded-lg",
-                    gridStyle.roundness === 'lot' && "rounded-[22px]"
-                  )}
-                  style={{ 
-                    aspectRatio: '1.7 / 1',
-                    padding: '2px',
-                    backgroundColor: gridStyle.showCellBg 
-                      ? (gridStyle.cellColor + Math.round(gridStyle.opacity * 255).toString(16).padStart(2, '0'))
-                      : 'transparent',
-                    color: gridStyle.fontColor,
-                    border: gridStyle.showBorder ? `1px solid ${gridStyle.borderColor}` : 'none'
-                  }}
-                >
-                  <span 
-                    className="w-full text-center break-all line-clamp-3 font-medium leading-[1.1] text-[22px]"
+                      gridStyle.roundness === 'some' && "rounded-lg",
+                      gridStyle.roundness === 'lot' && "rounded-[22px]"
+                    )}
                     style={{ 
-                      fontFamily: gridStyle.fontFamily === 'rounded' 
-                        ? "'Jua', sans-serif" 
-                        : gridStyle.fontFamily === 'thick' 
-                          ? "'Black Han Sans', sans-serif" 
-                          : "'Inter', sans-serif"
+                      sideAspect: '1.7 / 1',
+                      aspectRatio: '1.7 / 1',
+                      padding: '1px',
+                      backgroundColor: gridStyle.showCellBg 
+                        ? (gridStyle.cellColor + Math.round(gridStyle.opacity * 255).toString(16).padStart(2, '0'))
+                        : 'transparent',
+                      color: gridStyle.fontColor,
+                      border: gridStyle.showBorder ? `1px solid ${gridStyle.borderColor}` : 'none'
                     }}
                   >
-                    {gridData[r][c]}
-                  </span>
-                </div>
-              ))}
+                    <span 
+                      className="w-full text-center break-all line-clamp-3 font-medium leading-[1.0] text-[16px]"
+                      style={{ 
+                        fontFamily: gridStyle.fontFamily === 'rounded' 
+                          ? "'Jua', sans-serif" 
+                          : gridStyle.fontFamily === 'thick' 
+                            ? "'Black Han Sans', sans-serif" 
+                            : "'Inter', sans-serif"
+                      }}
+                    >
+                      {gridData[r][c]}
+                    </span>
+                  </div>
+                ))}
             </React.Fragment>
           ))}
           </div>

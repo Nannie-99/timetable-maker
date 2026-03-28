@@ -115,8 +115,8 @@ export default function App() {
               <title>초고화질 배경화면 저장</title>
               <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
               <style>
-                body { margin: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
-                img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: pointer; -webkit-touch-callout: default; }
+                body { margin: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100dvh; overflow: hidden; }
+                img { height: 100dvh; width: 100vw; object-fit: contain; cursor: pointer; -webkit-touch-callout: default; }
                 .hint { position: fixed; bottom: 30px; left: 0; right: 0; text-align: center; color: #fff; font-family: -apple-system, sans-serif; font-size: 14px; font-weight: 500; opacity: 0.9; pointer-events: none; text-shadow: 0 2px 8px rgba(0,0,0,0.8); background: rgba(0,0,0,0.3); padding: 10px; backdrop-filter: blur(5px); }
               </style>
             </head>
@@ -144,7 +144,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-dvh max-w-lg mx-auto bg-black text-white overflow-hidden border-x border-canvas-border relative">
-      <header className="py-[0.7rem] px-4 relative flex items-center justify-center border-b border-canvas-border bg-black/80 backdrop-blur-md z-10">
+      <header className="flex-none py-[0.7rem] px-4 relative flex items-center justify-center border-b border-canvas-border bg-black/80 backdrop-blur-md z-10 touch-none">
         <h1 className="text-lg font-bold tracking-tight text-white/40">시간표 메이커</h1>
         <button 
           onClick={() => setIsInfoOpen(true)}
@@ -355,7 +355,7 @@ export default function App() {
         </div>
       </main>
 
-      <div className="p-4 bg-black/80 backdrop-blur-md border-t border-canvas-border flex flex-col gap-2">
+      <div className="flex-none p-4 pb-6 bg-black/80 backdrop-blur-md border-t border-canvas-border flex flex-col gap-2 touch-none">
         <button
           onClick={handleDownload}
           disabled={isDownloading}
