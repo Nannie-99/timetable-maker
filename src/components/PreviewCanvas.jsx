@@ -148,21 +148,24 @@ export default function PreviewCanvas({ state, updateState, canvasRef, isExporti
     return Math.min(sX, sY);
   }, [autoScale, periods, isEditMode, canvasRef]);
 
-  // 2026 Strategy: Use <img> tag for maximum image quality during canvas capture.
-  // CSS object-fit: cover will handle the aspect ratio preservation.
+  // 2026 Strategy: Use background-image for maximum robustness in html2canvas.
+  // html2canvas supports background-size: cover perfectly, but fails on object-fit: cover.
   const bgImageSource = bgType === 'preset' ? PRESET_FILES[bgValue] || PRESET_FILES['강아지'] : bgValue;
 
   return (
     <div 
       ref={canvasRef}
       className={cn(
-        "relative shadow-2xl transition-all duration-500 bg-[#1a1a1a]",
+        "relative rounded-3xl transition-all duration-500 bg-[#1a1a1a]",
         isEditMode 
           ? "h-full w-full flex flex-col items-center justify-center p-4 bg-[#111] overflow-auto" 
-          : "h-full w-auto max-w-full rounded-3xl overflow-hidden"
+          : "h-full w-auto max-w-full overflow-hidden"
       )}
       data-canvas-container
-      style={!isEditMode ? { aspectRatio: currentRatioString } : {}}
+      style={!isEditMode ? { 
+        aspectRatio: currentRatioString,
+        boxSizing: 'border-box'
+      } : {}}
       onMouseDown={handleDragStart}
       onMouseMove={handleDragMove}
       onMouseUp={handleDragEnd}
@@ -171,33 +174,25 @@ export default function PreviewCanvas({ state, updateState, canvasRef, isExporti
       onTouchMove={handleDragMove}
       onTouchEnd={handleDragEnd}
     >
-      {/* Background Layer (Back to <img> for high resolution capture) */}
+      {/* Background Layer (DIV with background-image for distortion-free capture) */}
       {!isEditMode && (
         <div 
           className={cn(
-            "absolute inset-0 transition-transform duration-150 ease-out overflow-hidden flex items-center justify-center",
+            "absolute inset-0 transition-transform duration-150 ease-out flex items-center justify-center",
             isDragging ? "cursor-grabbing" : "cursor-grab"
           )}
           style={{
             transform: `translate(${bgTransform.x}px, ${bgTransform.y}px) scale(${finalScale})`,
             backgroundColor: (bgType !== 'preset' && bgType !== 'custom') ? '#111' : 'transparent',
+            // CRITICAL: Using backgroundImage is the most reliable way to prevent stretching in html2canvas
+            backgroundImage: (bgType === 'preset' || bgType === 'custom') ? `url("${bgImageSource}")` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            width: '100%',
+            height: '100%'
           }}
-        >
-          {(bgType === 'preset' || bgType === 'custom') && (
-            <img 
-              src={bgImageSource}
-              alt=""
-              crossOrigin="anonymous"
-              className="absolute min-w-full min-h-full object-cover pointer-events-none"
-              style={{
-                width: '100%',
-                height: '100%',
-                // Force object-fit behavior via CSS which html2canvas 1.4.1+ supports better now
-                objectFit: 'cover'
-              }}
-            />
-          )}
-        </div>
+        />
       )}
 
       {/* Background Dim Layer */}

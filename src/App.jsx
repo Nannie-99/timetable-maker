@@ -12,6 +12,7 @@ export default function App() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [infoAccordions, setInfoAccordions] = useState({
     profile: true,
     intro: false,
@@ -35,58 +36,74 @@ export default function App() {
     setIsDownloading(true);
     const container = canvasRef.current;
     
-    // Determine target dimensions (Standard 1080px width)
+    // Exact dimensions of the preview container at the moment of capture
+    const originalWidth = container.offsetWidth;
+    const originalHeight = container.offsetHeight;
+    
+    // Target width for high-res export
     const targetWidth = 1080;
-    const rect = container.getBoundingClientRect();
-    const aspectRatio = rect.width / rect.height;
-    const targetHeight = targetWidth / aspectRatio;
+    const scale = targetWidth / originalWidth;
     
     try {
-      // 2026 Strategy: capture the container at its CURRENT DOM size and let html2canvas 
-      // handle the scale. Forcing hard PX on the cloned EL ensures no layout reflow.
+      // 2026 Resolution & Distortion Fix:
+      // We force html2canvas to use the EXACT viewport dimensions of the container.
+      // This prevents the library from trying to fit the content into a different window size.
       const canvas = await html2canvas(container, {
         useCORS: true,
-        scale: targetWidth / container.offsetWidth, // High DPI capture
+        scale: scale, 
         backgroundColor: '#000000',
         logging: false,
-        width: container.offsetWidth,
-        height: container.offsetHeight,
+        width: originalWidth,
+        height: originalHeight,
+        // FORCE THE VIRTUAL WINDOW to match the container to prevent responsive shrinking
+        windowWidth: originalWidth,
+        windowHeight: originalHeight,
         onclone: (clonedDoc) => {
           const clonedEl = clonedDoc.querySelector('[data-canvas-container]');
           if (clonedEl) {
-            // REMOVE ALL RESPONSIVE JUNK: Force pixel-perfect static layout matching the preview
-            clonedEl.style.width = `${container.offsetWidth}px`;
-            clonedEl.style.height = `${container.offsetHeight}px`;
-            clonedEl.style.minWidth = `${container.offsetWidth}px`;
-            clonedEl.style.minHeight = `${container.offsetHeight}px`;
-            clonedEl.style.maxWidth = `${container.offsetWidth}px`;
-            clonedEl.style.maxHeight = `${container.offsetHeight}px`;
+            // Kill all flex/responsive behavior for the capture session
+            clonedEl.style.width = `${originalWidth}px`;
+            clonedEl.style.height = `${originalHeight}px`;
+            clonedEl.style.minWidth = `${originalWidth}px`;
+            clonedEl.style.maxWidth = `${originalWidth}px`;
+            clonedEl.style.minHeight = `${originalHeight}px`;
+            clonedEl.style.maxHeight = `${originalHeight}px`;
             clonedEl.style.borderRadius = '0';
-            clonedEl.style.position = 'relative';
+            clonedEl.style.position = 'fixed';
+            clonedEl.style.top = '0';
+            clonedEl.style.left = '0';
             clonedEl.style.margin = '0';
             clonedEl.style.padding = '0';
             clonedEl.style.transform = 'none';
-            clonedEl.style.display = 'block';
             clonedEl.style.boxShadow = 'none';
+            clonedEl.style.overflow = 'hidden';
+            clonedEl.style.display = 'block';
+
+            // Ensure images inside the clone are explicitly sized to match their containers
+            const imgs = clonedEl.querySelectorAll('img');
+            imgs.forEach(img => {
+              img.style.width = '100%';
+              img.style.height = '100%';
+              img.style.objectFit = 'cover';
+              img.style.display = 'block';
+            });
           }
         }
       });
       
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 1.0));
       if (blob) {
         const url = URL.createObjectURL(blob);
-        const fileName = `timetable_wallpaper_${new Date().getTime()}.png`;
+        const fileName = `timetable_wallpaper_${new Date().getTime()}.jpg`;
         
         const link = document.createElement('a');
         link.style.display = 'none';
         link.href = url;
         link.download = fileName;
         
-        // For mobile stability, append to document body before clicking
         document.body.appendChild(link);
         link.click();
         
-        // Slightly longer cleanup delay to ensure mobile browsers start the download process
         setTimeout(() => {
           document.body.removeChild(link);
           URL.revokeObjectURL(url);
@@ -260,6 +277,41 @@ export default function App() {
         </div>
       )}
 
+      {isHelpOpen && (
+        <div className="absolute inset-0 z-[110] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsHelpOpen(false)} />
+          <div className="relative w-full max-w-sm bg-[#1a1a1a] border border-white/10 rounded-3xl shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col p-6 pointer-events-auto">
+            <h3 className="text-sm font-bold text-white/90 mb-4 flex items-center gap-2">
+              <span>💡</span> 다운로드가 안 되나요?
+            </h3>
+            
+            <div className="space-y-4 text-[11px] leading-relaxed text-white/70">
+              <p>
+                카카오톡, 인스타그램 등 <span className="text-accent-neon font-bold">인앱 브라우저</span>에서는 보안 상의 이유로 파일 다운로드 기능이 정상적으로 작동하지 않을 수 있습니다.
+              </p>
+              
+              <div className="bg-white/5 border border-white/10 rounded-xl p-3 space-y-2">
+                <p className="text-white/40 font-bold text-[9px] uppercase tracking-wider">해결 방법</p>
+                <p>
+                  화면 오른쪽 상단의 <span className="text-white font-bold">메뉴(⋮ 또는 ...)</span>를 누른 뒤, <span className="text-white font-bold">"다른 브라우저로 열기"</span> 또는 <span className="text-white font-bold">"Chrome으로 열기"</span>를 선택하여 다시 시도해 주세요.
+                </p>
+              </div>
+
+              <p className="pt-2">
+                위 방법을 시도해도 문제가 계속된다면 인스타그램 <span className="text-accent-neon font-bold">@hello.nan_ssaem</span>으로 DM 주시면 도와드리겠습니다!
+              </p>
+            </div>
+
+            <button 
+              onClick={() => setIsHelpOpen(false)}
+              className="mt-6 w-full py-3 bg-white/5 border border-white/10 rounded-xl text-xs font-bold hover:bg-white/10 transition-all text-white/60"
+            >
+              확인했습니다
+            </button>
+          </div>
+        </div>
+      )}
+
       <main className="flex-1 flex flex-col overflow-hidden relative">
         <div className="flex-1 p-4 flex items-center justify-center bg-black/50 overflow-hidden">
           <PreviewCanvas state={state} updateState={updateState} canvasRef={canvasRef} isExporting={isExporting} />
@@ -286,7 +338,7 @@ export default function App() {
         <button
           onClick={handleDownload}
           disabled={isDownloading}
-          className="w-full bg-gradient-to-r from-accent-neon to-indigo-500 text-black font-bold py-[0.9rem] px-6 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
+          className="w-full bg-accent-neon text-black font-bold py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2 hover:brightness-105 hover:shadow-[0_0_20px_rgba(0,255,204,0.15)] active:scale-[0.98] transition-all disabled:opacity-50"
         >
           {isDownloading ? (
             <span className="animate-spin w-5 h-5 border-2 border-black border-t-transparent rounded-full" />
@@ -295,8 +347,14 @@ export default function App() {
           )}
           <span>배경화면 다운로드</span>
         </button>
-        <footer className="text-center text-[9px] text-white/30 tracking-tight mt-1">
-          ©2026. 난쌤 All rights reserved. @hello.nan_ssaem
+        <footer className="text-center text-[9px] text-white/30 tracking-tight mt-1 flex items-center justify-center gap-1">
+          <span>©2026. 난쌤 All rights reserved.</span>
+          <button 
+            onClick={() => setIsHelpOpen(true)}
+            className="underline underline-offset-2 hover:text-white/60 transition-colors"
+          >
+            [다운로드가 안될 때]
+          </button>
         </footer>
       </div>
       <Analytics />
