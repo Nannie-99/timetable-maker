@@ -90,12 +90,20 @@ export default function App() {
               img.style.transform = 'none';
             });
 
-            // Ensure all text is sharp
+            // Ensure all text is sharp and perfectly aligned
             const allElements = clonedEl.querySelectorAll('*');
             allElements.forEach(el => {
               if (el instanceof HTMLElement) {
                 el.style.textShadow = 'none';
                 el.style.webkitFontSmoothing = 'antialiased';
+                el.style.fontVariantNumeric = 'tabular-nums';
+                
+                // Extra safety for flexbox centering in capture
+                if (el.classList.contains('flex')) {
+                  el.style.display = 'flex';
+                  el.style.alignItems = 'center';
+                  el.style.justifyContent = 'center';
+                }
               }
             });
           }

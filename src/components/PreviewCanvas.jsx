@@ -308,14 +308,13 @@ export default function PreviewCanvas({ state, updateState, canvasRef, isExporti
                   <div 
                     key={c}
                     className={cn(
-                      "flex flex-col items-center justify-center overflow-hidden transition-all duration-300 border border-white/5",
+                      "flex items-center justify-center overflow-hidden transition-all duration-300 border border-white/5",
                       gridStyle.roundness === 'some' && "rounded-lg",
                       gridStyle.roundness === 'lot' && "rounded-[22px]"
                     )}
                     style={{ 
-                      sideAspect: '1.7 / 1',
                       aspectRatio: '1.7 / 1',
-                      padding: '1px',
+                      padding: '2px 4px',
                       backgroundColor: gridStyle.showCellBg 
                         ? (gridStyle.cellColor + Math.round(gridStyle.opacity * 255).toString(16).padStart(2, '0'))
                         : 'transparent',
@@ -324,13 +323,15 @@ export default function PreviewCanvas({ state, updateState, canvasRef, isExporti
                     }}
                   >
                     <span 
-                      className="w-full text-center break-all line-clamp-3 font-medium leading-[1.0] text-[16px]"
+                      className="w-full text-center break-all line-clamp-3 font-medium leading-[1.2] text-[14px]"
                       style={{ 
                         fontFamily: gridStyle.fontFamily === 'rounded' 
                           ? "'Jua', sans-serif" 
                           : gridStyle.fontFamily === 'thick' 
                             ? "'Black Han Sans', sans-serif" 
-                            : "'Inter', sans-serif"
+                            : "'Inter', sans-serif",
+                        display: 'block',
+                        width: '100%'
                       }}
                     >
                       {gridData[r][c]}
