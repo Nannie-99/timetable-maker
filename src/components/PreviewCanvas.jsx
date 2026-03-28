@@ -174,25 +174,35 @@ export default function PreviewCanvas({ state, updateState, canvasRef, isExporti
       onTouchMove={handleDragMove}
       onTouchEnd={handleDragEnd}
     >
-      {/* Background Layer (DIV with background-image for distortion-free capture) */}
+      {/* Background Layer (IMG with object-fit for high-res direct capture) */}
       {!isEditMode && (
         <div 
           className={cn(
-            "absolute inset-0 transition-transform duration-150 ease-out flex items-center justify-center",
+            "absolute inset-0 transition-transform duration-150 ease-out flex items-center justify-center overflow-hidden",
             isDragging ? "cursor-grabbing" : "cursor-grab"
           )}
           style={{
             transform: `translate(${bgTransform.x}px, ${bgTransform.y}px) scale(${finalScale})`,
             backgroundColor: (bgType !== 'preset' && bgType !== 'custom') ? '#111' : 'transparent',
-            // CRITICAL: Using backgroundImage is the most reliable way to prevent stretching in html2canvas
-            backgroundImage: (bgType === 'preset' || bgType === 'custom') ? `url("${bgImageSource}")` : 'none',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
             width: '100%',
             height: '100%'
           }}
-        />
+        >
+          {(bgType === 'preset' || bgType === 'custom') && (
+            <img 
+              src={bgImageSource} 
+              alt=""
+              className="w-full h-full object-cover pointer-events-none"
+              style={{
+                display: 'block',
+                // Preserve original quality markers
+                imageRendering: 'auto',
+                WebkitBackfaceVisibility: 'hidden'
+              }}
+              crossOrigin="anonymous"
+            />
+          )}
+        </div>
       )}
 
       {/* Background Dim Layer */}

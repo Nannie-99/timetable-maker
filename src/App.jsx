@@ -40,14 +40,12 @@ export default function App() {
     const originalWidth = container.offsetWidth;
     const originalHeight = container.offsetHeight;
     
-    // Target width for high-res export
-    const targetWidth = 1080;
+    // 2026 Ultra-High Resolution Strategy: 
+    // Increase target width to 2560px (QHD+) to ensure pixel-perfect quality even after JPEG encoding.
+    const targetWidth = 2560; 
     const scale = targetWidth / originalWidth;
     
     try {
-      // 2026 Resolution & Distortion Fix:
-      // We force html2canvas to use the EXACT viewport dimensions of the container.
-      // This prevents the library from trying to fit the content into a different window size.
       const canvas = await html2canvas(container, {
         useCORS: true,
         scale: scale, 
@@ -55,13 +53,15 @@ export default function App() {
         logging: false,
         width: originalWidth,
         height: originalHeight,
-        // FORCE THE VIRTUAL WINDOW to match the container to prevent responsive shrinking
         windowWidth: originalWidth,
         windowHeight: originalHeight,
+        imageTimeout: 0,
+        // High-performance rendering hints
+        allowTaint: true,
+        backgroundColor: null,
         onclone: (clonedDoc) => {
           const clonedEl = clonedDoc.querySelector('[data-canvas-container]');
           if (clonedEl) {
-            // Kill all flex/responsive behavior for the capture session
             clonedEl.style.width = `${originalWidth}px`;
             clonedEl.style.height = `${originalHeight}px`;
             clonedEl.style.minWidth = `${originalWidth}px`;
@@ -79,35 +79,56 @@ export default function App() {
             clonedEl.style.overflow = 'hidden';
             clonedEl.style.display = 'block';
 
-            // Ensure images inside the clone are explicitly sized to match their containers
+            // Boost image quality in the clone
             const imgs = clonedEl.querySelectorAll('img');
             imgs.forEach(img => {
               img.style.width = '100%';
               img.style.height = '100%';
-              img.style.objectFit = 'cover';
+              img.style.objectFit = 'cover'; // Support for 2026 rendering standards
               img.style.display = 'block';
+              img.style.imageRendering = 'high-quality';
+              img.style.transform = 'none';
+            });
+
+            // Ensure all text is sharp
+            const allElements = clonedEl.querySelectorAll('*');
+            allElements.forEach(el => {
+              if (el instanceof HTMLElement) {
+                el.style.textShadow = 'none';
+                el.style.webkitFontSmoothing = 'antialiased';
+              }
             });
           }
         }
       });
       
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 1.0));
-      if (blob) {
-        const url = URL.createObjectURL(blob);
-        const fileName = `timetable_wallpaper_${new Date().getTime()}.jpg`;
-        
-        const link = document.createElement('a');
-        link.style.display = 'none';
-        link.href = url;
-        link.download = fileName;
-        
-        document.body.appendChild(link);
-        link.click();
-        
-        setTimeout(() => {
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }, 1000);
+      // Generate ultra-high quality JPEG data URL
+      // Priority: Quality 1.0 (Maximum)
+      const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
+      
+      // Open in new window for direct gallery save (Long-press)
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head>
+              <title>초고화질 배경화면 저장</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+              <style>
+                body { margin: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
+                img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: pointer; -webkit-touch-callout: default; }
+                .hint { position: fixed; bottom: 30px; left: 0; right: 0; text-align: center; color: #fff; font-family: -apple-system, sans-serif; font-size: 14px; font-weight: 500; opacity: 0.9; pointer-events: none; text-shadow: 0 2px 8px rgba(0,0,0,0.8); background: rgba(0,0,0,0.3); padding: 10px; backdrop-filter: blur(5px); }
+              </style>
+            </head>
+            <body>
+              <img src="${dataUrl}" alt="Timetable Wallpaper" />
+              <div class="hint">💡 이미지를 길게 눌러 [사진 앱에 저장] 하세요</div>
+            </body>
+          </html>
+        `);
+        newWindow.document.close();
+      } else {
+        alert('팝업이 차단되었습니다. 팝업 허용 후 다시 시도해 주세요.');
       }
     } catch (err) {
       console.error('Download failed', err);
