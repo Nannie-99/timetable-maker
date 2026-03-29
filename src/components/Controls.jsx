@@ -171,7 +171,7 @@ function BackgroundTab({ state, updateState }) {
               onClick={() => updateState({ aspectRatio: ratio })}
               className={cn(
                 "py-2 rounded-xl text-xs font-bold border transition-all",
-                state.aspectRatio === ratio ? "bg-accent-neon text-black border-accent-neon" : "bg-white/5 border-white/20 opacity-40 hover:opacity-100"
+                state.aspectRatio === ratio ? "bg-accent-neon text-black border-accent-neon opacity-100" : "bg-white/5 border-white/20 opacity-40 hover:opacity-100"
               )}
             >
               {ratio}

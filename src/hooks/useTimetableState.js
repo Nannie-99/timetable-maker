@@ -5,6 +5,7 @@ const STORAGE_KEY = 'timetable_maker_v1.1';
 const INITIAL_DATA = {
   periods: 6,
   days: 5,
+  aspectRatio: '9:19.5',
   bgValue: 'modern',
   bgDim: 0.3,
   gridData: Array(8).fill(null).map(() => Array(5).fill('')),
