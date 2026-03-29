@@ -338,8 +338,9 @@ function StyleTab({ state, updateState }) {
               <input 
                 type="range" min="30" max="70" 
                 value={gridStyle.xPosition || 49} 
-                onChange={(e) => updateGridStyle({ xPosition: parseInt(e.target.value) })}
+                onChange={(e) => updateGridStyle({ xPosition: parseFloat(e.target.value) })}
                 className="w-full accent-accent-neon"
+                step="0.5"
               />
               <div className="flex justify-between px-0.5">
                 <span className="text-[10px] opacity-30 font-bold">좌측</span>
@@ -363,8 +364,9 @@ function StyleTab({ state, updateState }) {
               <input 
                 type="range" min="0" max="100" 
                 value={gridStyle.yPosition || 65} 
-                onChange={(e) => updateGridStyle({ yPosition: parseInt(e.target.value) })}
+                onChange={(e) => updateGridStyle({ yPosition: parseFloat(e.target.value) })}
                 className="w-full accent-accent-neon"
+                step="0.5"
               />
               <div className="flex justify-between px-0.5">
                 <span className="text-[10px] opacity-30 font-bold">위로</span>
