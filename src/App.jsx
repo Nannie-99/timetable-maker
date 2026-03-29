@@ -3,7 +3,7 @@ import { useTimetableState } from './hooks/useTimetableState';
 import PreviewCanvas from './components/PreviewCanvas';
 const Controls = lazy(() => import('./components/Controls'));
 import { Download, Info, X, ChevronDown, ChevronUp } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { generateWallpaperCanvas } from './utils/exportCanvas';
 import { Analytics } from "@vercel/analytics/react";
 
 export default function App() {
@@ -32,7 +32,7 @@ export default function App() {
 
   const handleDownload = async () => {
     if (!canvasRef.current || isDownloading) return;
-    
+
     const newWindow = window.open();
     if (!newWindow) {
       alert('팝업이 차단되었습니다. 설정을 변경해 주세요.');
@@ -40,50 +40,31 @@ export default function App() {
     }
 
     newWindow.document.write(`
-      <html><head><style>body { margin: 0; background: #000; display: flex; align-items: center; justify-content: center; height: 100dvh; color: #fff; font-family: sans-serif; }</style></head>
-      <body><div style="text-align: center;">🪄 고화질 배경화면 생성 중...<br/><span style="font-size: 12px; opacity: 0.6; margin-top: 8px; display: block;">잠시만 기다려 주세요</span></div></body></html>
+      <html><head><style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100dvh;color:#fff;font-family:sans-serif;}</style></head>
+      <body><div style="text-align:center">🪄 고화질 배경화면 생성 중...<br/><span style="font-size:12px;opacity:0.6;margin-top:8px;display:block">잠시만 기다려 주세요</span></div></body></html>
     `);
 
     setIsDownloading(true);
     const container = canvasRef.current;
-    
-    // Safety Strategy: 1440px (QHD) width is perfectly high-res for mobile
-    const targetWidth = 1440; 
-    const originalWidth = container.offsetWidth;
-    const originalHeight = container.offsetHeight;
-    let scaleFactor = targetWidth / originalWidth;
-    
-    // Safety cap for mobile memory
-    if (originalHeight * scaleFactor > 3072) {
-      scaleFactor = 3072 / originalHeight;
-    }
-    
-    try {
-      // Small delay for DOM stability
-      await new Promise(resolve => setTimeout(resolve, 200));
 
-      const canvas = await html2canvas(container, {
-        useCORS: true,
-        scale: scaleFactor, 
-        backgroundColor: '#000000',
-        logging: false,
-        width: originalWidth,
-        height: originalHeight,
-        scrollY: -window.scrollY,
-        scrollX: -window.scrollX,
-        imageTimeout: 15000,
-        // 2026 Strategy: No onclone style overrides. 
-        // WYSIWYG (What You See Is What You Get) - Capture EXACTLY what the user sees.
-      });
-      
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-      
+    try {
+      // DOM 안정화 대기
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // getBoundingClientRect()로 실제 렌더링 크기 측정 (CSS transform, aspectRatio 모두 반영)
+      const containerRect = container.getBoundingClientRect();
+
+      // Canvas 2D API로 직접 렌더링 (html2canvas의 CSS transform 미지원 문제 해결)
+      const offscreen = await generateWallpaperCanvas(state, containerRect, container);
+
+      const dataUrl = offscreen.toDataURL('image/jpeg', 0.95);
+
       newWindow.document.close();
       newWindow.document.open();
       newWindow.document.write(`
         <html>
           <head>
-            <title>초고화질 배경화면 저장</title>
+            <title>배경화면 저장</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             <style>
               body { margin: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100dvh; overflow: hidden; }
