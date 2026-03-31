@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
 import { useTimetableState } from './hooks/useTimetableState';
 import PreviewCanvas from './components/PreviewCanvas';
 const Controls = lazy(() => import('./components/Controls'));
+import AdfitBanner from './components/AdfitBanner';
 import { Download, Info, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { generateWallpaperCanvas } from './utils/exportCanvas';
 import { Analytics } from "@vercel/analytics/react";
@@ -306,6 +307,7 @@ export default function App() {
       </main>
 
       <div className="flex-none p-4 pb-6 bg-black/80 backdrop-blur-md border-t border-canvas-border flex flex-col gap-2 touch-none">
+        <AdfitBanner />
         <button
           onClick={handleDownload}
           disabled={isDownloading}
